@@ -21,6 +21,15 @@ module.exports = function (grunt) {
     dist: 'dist'
   };
 
+  var proxyForStubby = {
+    context: '/api',
+    host: 'localhost',
+    port: 8090,
+    https: false
+  };
+  var proxySnippet = require('grunt-connect-proxy/lib/utils').proxyRequest;
+
+
   // Define the configuration for all the tasks
   grunt.initConfig({
 
@@ -72,18 +81,28 @@ module.exports = function (grunt) {
         livereload: 35729
       },
       livereload: {
+        proxies:[proxyForStubby],
         options: {
           open: true,
           middleware: function (connect) {
+            //return [
+            //  connect.static('.tmp'),
+            //  connect().use(
+            //    '/bower_components',
+            //    connect.static('./bower_components')
+            //  ),
+            //  connect().use(
+            //    '/app/styles',
+            //    connect.static('./app/styles')
+            //  ),
+            //  connect.static(appConfig.app)
+            //];
             return [
+              proxySnippet,
               connect.static('.tmp'),
               connect().use(
                 '/bower_components',
                 connect.static('./bower_components')
-              ),
-              connect().use(
-                '/app/styles',
-                connect.static('./app/styles')
               ),
               connect.static(appConfig.app)
             ];
@@ -91,6 +110,7 @@ module.exports = function (grunt) {
         }
       },
       test: {
+        proxies:[proxyForStubby],
         options: {
           port: 9001,
           middleware: function (connect) {
@@ -110,6 +130,18 @@ module.exports = function (grunt) {
         options: {
           open: true,
           base: '<%= yeoman.dist %>'
+        }
+      }
+    },
+    //stubby!
+    stubby: {
+      stubsServer: {
+        files: [{
+          src: ['stubs/*.{json,yaml,js}']
+        }],
+        options: {
+          stubs: 8090,
+          relativeFilesPath: 'stubs/'
         }
       }
     },
@@ -156,7 +188,7 @@ module.exports = function (grunt) {
       },
       server: {
         options: {
-          map: true,
+          map: true
         },
         files: [{
           expand: true,
@@ -400,10 +432,15 @@ module.exports = function (grunt) {
       'wiredep',
       'concurrent:server',
       'autoprefixer:server',
+      'stubby',
       'connect:livereload',
       'watch'
     ]);
   });
+
+  grunt.loadNpmTasks("grunt-stubby");
+  grunt.loadNpmTasks('grunt-connect-proxy');
+
 
   grunt.registerTask('server', 'DEPRECATED TASK. Use the "serve" task instead', function (target) {
     grunt.log.warn('The `server` task has been deprecated. Use `grunt serve` to start a server.');
